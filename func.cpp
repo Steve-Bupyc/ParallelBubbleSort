@@ -1,7 +1,6 @@
 ﻿#include "func.h"
 
-const int max_threads = (length + 1) / 2;
-thread threads[max_threads];
+std::mutex g_lock;
 
 void compareExchange(vector<int>& A, int i, int j) {
     if (A[i] > A[j]) 
@@ -15,13 +14,10 @@ void compareExchange(vector<int>& A, int i, int j) {
 // Последовательный алгоритм пузырьковой сортировки
 void bubbleSort(vector<int>& A)
 {
-    //cout << "n = " << n << endl;
-    for (int i = 0; i < (length - 1); i++)
+    for (int i = 0; i < (A.size() - 1); i++)
     {
-        //cout << "i =" << i << endl;
-        for (int j = 0; j < (length - i - 1); j++)
+        for (int j = 0; j < (A.size() - i - 1); j++)
         {
-            //cout << "j =" << j << endl;
             compareExchange(A, j, j + 1);
         }
     }
@@ -30,66 +26,54 @@ void bubbleSort(vector<int>& A)
 // Последовательный алгоритм чет-нечетной перестановки
 void oddEvenBubbleSort(vector<int>& A) 
 {
-    //for (int i = 1; i < length; i++) {
-    //    if (i % 2 == 1) { // нечетная итерация
-    //        for (int j = 0; j < length/2 - 2; j++)
-    //            compareExchange(A, 2*j + 1, 2*j + 2);
-    //        if (n % 2 == 1) // сравнение последней пары при нечетном n
-    //            compareExchange(A, length - 2, length - 1);
-    //    }
-    //    if (i % 2 == 0) // четная итерация
-    //        for (int j = 1; j < length/2 - 1; j++)
-    //            compareExchange(A, 2*j, 2*j + 1);
-    //}
-    for (int i = 0; i < length; i++) {
-        // (i % 2) ? 0 : 1 возвращает 1, если i четное, 0, если i не четное
-        for (int j = (i % 2) ? 0 : 1; j + 1 < length; j += 2) {
+    for (int i = 0; i < A.size(); i++) {
+        for (int j = (i % 2) ? 0 : 1; j + 1 < A.size(); j += 2) {
             compareExchange(A, j, j+1);
         }
     }
 }
 
-void parallelOddEvenBubbleSort(vector<int>& A)
+// Параллельный алгоритм чет-нечетной перестановки
+void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_number)
 {
-    //for (int i = 0; i < length; i++) {
-    //    // (i % 2) ? 0 : 1 возвращает 1, если i четное, 0, если i не четное
-    //    for (int j = (i % 2) ? 0 : 1; j + 1 < max_threads; j += 2) {
-    //        threads[j] = thread(compareExchange, ref(A), j, j+1);
-    //    }
-    //    for (int j = (i % 2) ? 0 : 1; j + 1 < max_threads; j++) {
-    //        threads[j].join();
-    //    }
-    //}
-    int i, j;
-    for (i = 1; i <= length; i++) {
-        // Odd step 
-        if (i % 2 == 1) {
-            for (j = 0; j < max_threads; j++) {
-
-                threads[j] = thread(compareExchange, ref(A), j, j + 1);
-            }
-            for (j = 0; j < max_threads; j++) {
-                //cout << "Process id" << threads[j].get_id() << endl;
-                threads[j].join();
-            }
-        }
-
-        // Even step 
-        else {
-            for (j = 0; j < max_threads - 1; j++) {
-                threads[j] = thread(compareExchange, ref(A), j, j + 1);
-            }
-            for (j = 0; j < max_threads - 1; j++)
-                threads[j].join();
-        }
-    }
     
+    int remainder = A.size() % number_threads;
+    int length = A.size() / number_threads;
+    if (number_threads == 1) {
+        oddEvenBubbleSort(A);
+    }
+    else {
+        g_lock.lock();
+        if (thead_number + 1 == number_threads) {
+            for (int i = 0; i < length + remainder; i++) {
+                for (int j = (i % 2) ? 0 : 1; j + 1 < A.size(); j += 2) {
+                    compareExchange(A, j, j + 1);
+                }
+            }
+        }
+        else {
+            for (int i = 0; i < length; i++) {
+                int number;
+                if ((thead_number % 2) == 0 && (i % 2) == 0) {
+                    number = 0;
+                }
+                else {
+                    number = 1;
+                }
+                for (int j = number; j + 1 < A.size(); j += 2) {
+                    compareExchange(A, j, j + 1);
+
+                }
+            }
+        }
+        g_lock.unlock();
+    }
 }
 
 void printVector(const vector<int>& A) {
     cout << "{";
     bool first = true;
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < A.size(); i++) {
         if (!first) {
             cout << ", " << A[i];
         }
@@ -103,7 +87,15 @@ void printVector(const vector<int>& A) {
 
 void fillVector(vector<int>& A)
 {
-    for (int i = 0; i < length; i++) {
+    for (int i = 0; i < A.size(); i++) {
         A[i] = rand() % 100;
     }
+}
+
+bool check(const vector<int>& A)
+{
+    for (int i = 0; i < A.size() - 1; i++)
+        if (!(A[i] <= A[i + 1]))
+            return false;
+    return true;
 }
