@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
     time_t timer;
-    int length = 100;
+    int length = 30000;
     vector<int> values(length);
     const auto processor_count = std::thread::hardware_concurrency();
     vector<int> number_threads;
@@ -25,6 +25,7 @@ int main(int argc, char* argv[]) {
     timer = clock();
     bubbleSort(values1);
     cout << "exuction time:" << (double)(clock() - timer) / CLOCKS_PER_SEC << endl;
+    cout << (check(values1) == 0 ? "false" : "true") << endl;
     //printVector(values1);
     (values1);
 
@@ -33,6 +34,7 @@ int main(int argc, char* argv[]) {
     //printVector(values2);
     oddEvenBubbleSort(values2);
     cout << "exuction time:" << (double)(clock() - timer) / CLOCKS_PER_SEC << endl;
+    cout << (check(values2) == 0 ? "false" : "true") << endl;
     //printVector(values2);
 
     cout << "\nParallel Odd Even Bubble Sort\n";
@@ -50,10 +52,11 @@ int main(int argc, char* argv[]) {
             }
             for (auto& th : threads)
                 th.join();
+            bubbleSort(values3);
+            cout << "exuction time:" << (double)(clock() - timer) / CLOCKS_PER_SEC << endl;
+            //printVector(values3);
             cout << (check(values3) == 0 ? "false" : "true") << endl;
             //printVector(values3);
-            cout << "exuction time:" << (double)(clock() - timer) / CLOCKS_PER_SEC << endl;
         }
     }
-    
 }

@@ -37,36 +37,19 @@ void oddEvenBubbleSort(vector<int>& A)
 void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_number)
 {
     
-    int remainder = A.size() % number_threads;
     int length = A.size() / number_threads;
+	int start = thead_number * length;
     if (number_threads == 1) {
         oddEvenBubbleSort(A);
     }
     else {
-        g_lock.lock();
-        if (thead_number + 1 == number_threads) {
-            for (int i = 0; i < length + remainder; i++) {
-                for (int j = (i % 2) ? 0 : 1; j + 1 < A.size(); j += 2) {
-                    compareExchange(A, j, j + 1);
-                }
+        for (int i = start; i < start + length; i++)
+        {
+            for (int j = i + 1; j < start + length; j++)
+            {
+                compareExchange(A, i, j);
             }
         }
-        else {
-            for (int i = 0; i < length; i++) {
-                int number;
-                if ((thead_number % 2) == 0 && (i % 2) == 0) {
-                    number = 0;
-                }
-                else {
-                    number = 1;
-                }
-                for (int j = number; j + 1 < A.size(); j += 2) {
-                    compareExchange(A, j, j + 1);
-
-                }
-            }
-        }
-        g_lock.unlock();
     }
 }
 
