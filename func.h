@@ -18,5 +18,6 @@ void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_num
 void fillVector(vector<int>& vec);
 void printVector(const vector<int>& vec);
 bool check(const vector<int>& A);
+void mergeVector(vector<int>& A, int number_threads, int thead_number, int length, int remainder);
 
 #endif

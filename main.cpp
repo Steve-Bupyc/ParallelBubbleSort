@@ -3,7 +3,7 @@
 
 int main(int argc, char* argv[]) {
     time_t timer;
-    int length = 30000;
+    int length = 24;
     vector<int> values(length);
     const auto processor_count = std::thread::hardware_concurrency();
     vector<int> number_threads;
@@ -52,11 +52,17 @@ int main(int argc, char* argv[]) {
             }
             for (auto& th : threads)
                 th.join();
-            bubbleSort(values3);
+            //bubbleSort(values3);
+            printVector(values3);
+            //cout << (check(values3) == 0 ? "false" : "true") << endl;
+            if (number_threads[i] != 1) {
+                mergeVector(values3, number_threads[i], 0, 0, 0);
+            }
             cout << "exuction time:" << (double)(clock() - timer) / CLOCKS_PER_SEC << endl;
-            //printVector(values3);
             cout << (check(values3) == 0 ? "false" : "true") << endl;
-            //printVector(values3);
+            printVector(values3);
         }
     }
+    system("PAUSE");
+    return 0;
 }
