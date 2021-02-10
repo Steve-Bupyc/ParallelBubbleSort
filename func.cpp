@@ -57,20 +57,30 @@ void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_num
                 compareExchange(A, i, j);
             }
         }
-        /*auto log2 = [](unsigned long long x) {x--; int i = 0;  while (x >>= 1) { i++; } return i; };
-        cout << "log2(number_threads) = " << log2(number_threads) << endl;
-        for (int k = 1; k < log2(number_threads); k++) {
+        auto log2 = [](unsigned long long x) {x--; int i = 0;  while (x) { x >>= 1; i++; } return i; };
+       /* g_lock.lock();
+        cout << "N=" << thead_number << " log2(number_threads) = " << log2(number_threads) << endl;
+        g_lock.unlock();*/
+        for (int k = 1; k <= log2(number_threads); k++) {
+            /*g_lock.lock();
             cout << "k = " << k << endl;
-            cout << "1<<k = " << 1<<k << endl;
-            if (thead_number % (1<<k) == 0) {
-                while (flags[thead_number + 1] == (k-1)) {}
-                mergeVector(A, number_threads, thead_number, length, remainder);
+            cout << "1<<k = " << (1<<k) << endl;
+            g_lock.unlock();*/
+            if (thead_number % (1<<k) != 0) {
                 flags[thead_number] = k;
+                g_lock.lock();
+                cout << "N=" << thead_number << endl;
+                g_lock.unlock();
+                return;                
             }
-            else {
-                flags[thead_number] = k;
-            }
-        }*/
+            while (flags[thead_number + (1 << (k - 1))] < (k)) {}
+            mergeVector(A, number_threads, thead_number, length, remainder, k);
+            g_lock.lock();
+            cout << "N=" << thead_number << endl;
+            printVector(A);
+            g_lock.unlock();
+            flags[thead_number] = k;
+        }
     }
 }
 
@@ -105,31 +115,33 @@ bool check(const vector<int>& A)
 }
 
 // Последовательный алгоритм пузырьковой сортировки
-void mergeVector(vector<int>& A, int number_threads, int thead_number, int length, int remainder)
+void mergeVector(vector<int>& A, int number_threads, int thead_number, int length, int remainder, int k)
 {
-    int i = 0;
-    int next = A.size() / number_threads - 1;
-    //cout << next << endl << endl;
-    while(i < (A.size() - 2))
-    //for (int i = 0; i < (A.size() - 1); i++)
-    {
-        for (int j = ((i + 1) > next) ? (i+1) : next; j < A.size(); j++)
-        {
-            if (A[i] > A[j]) {
-                cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
-                std::swap(A[i], A[j]);
-                if (j != (A.size() - 1)) {
-                    //cout << "i = 0" << endl;
-                    i = 0;
-                }
-                break;
-            }
-        }
-        i++;
-    }
-    /*const int start1 = thead_number * length;
+    //int i = 0;
+    //int next = A.size() / number_threads - 1;
+    ////cout << next << endl << endl;
+    //while(i < (A.size() - 2))
+    //{
+    //    for (int j = ((i + 1) > next) ? (i+1) : next; j < A.size(); j++)
+    //    {
+    //        if (A[i] > A[j]) {
+    //            cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
+    //            std::swap(A[i], A[j]);
+    //            if (j != (A.size() - 1)) {
+    //                //cout << "i = 0" << endl;
+    //                i = 0;
+    //            }
+    //            break;
+    //        }
+    //    }
+    //    i++;
+    //}
+    const int start1 = thead_number * length;
     const int start2 = (thead_number + 1) * length;
     const int end = start2 + length + remainder - 1;
+    g_lock.lock();
+    cout << start1 << start2 << end << endl;
+    g_lock.unlock();
     int i = start1;
     int j = start2;
     while (i < end)
@@ -139,9 +151,23 @@ void mergeVector(vector<int>& A, int number_threads, int thead_number, int lengt
             continue;
         }
         if (A[i] > A[j]) {
+            //cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
             std::swap(A[i], A[j]);
         }
         i++;
-    }*/
+    }
+}
 
+void sortsort(vector<int>& A, int number_threads)
+{
+    for (int i = 0; i < (A.size() - 1); i++)
+    {
+        for (int j = (i + 1); j < (A.size() - 1); j++)
+        {
+            if (A[i] > A[j]) {
+                cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
+                std::swap(A[i], A[j]);
+            }
+        }
+    }
 }
