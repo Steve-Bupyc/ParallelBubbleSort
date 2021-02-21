@@ -34,7 +34,7 @@ void oddEvenBubbleSort(vector<int>& A)
 }
 
 // Параллельный алгоритм чет-нечетной перестановки
-void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_number)
+void parallelOddEvenBubbleSort(vector<int>& A, my_barrier& barrier, int number_threads, int thead_number)
 {
     
     static std::atomic <int> flags[32]{};
@@ -58,25 +58,36 @@ void parallelOddEvenBubbleSort(vector<int>& A, int number_threads, int thead_num
             }
         }
         auto log2 = [](unsigned long long x) {x--; int i = 0;  while (x) { x >>= 1; i++; } return i; };
-       /* g_lock.lock();
-        cout << "N=" << thead_number << " log2(number_threads) = " << log2(number_threads) << endl;
-        g_lock.unlock();*/
         for (int k = 1; k <= log2(number_threads); k++) {
+            //barier
+            g_lock.lock();
+            //cout << "counter >= thread_count =>" << barrier.counter << ">=" << barrier.thread_count << endl;
+            cout << "N=" << thead_number << " wait." << endl;
+            g_lock.unlock();
+            barrier.wait();
             /*g_lock.lock();
-            cout << "k = " << k << endl;
-            cout << "1<<k = " << (1<<k) << endl;
+            cout << "N=" << thead_number << ", k=" << k << endl;
             g_lock.unlock();*/
             if (thead_number % (1<<k) != 0) {
+                barrier.reduce();
                 flags[thead_number] = k;
                 g_lock.lock();
-                cout << "N=" << thead_number << endl;
+                cout << "k=" << k << ", N=" << thead_number << " return." << endl;
                 g_lock.unlock();
                 return;                
             }
+            //g_lock.lock();
+            //cout << "N=" << thead_number << endl;
+            //cout << "(thead_number + (1 << (k - 1)))= (" << thead_number << "+ ( 1 << " << k-1 << " ) = " << (1 << (k - 1)) << endl;
+            //g_lock.unlock();
             while (flags[thead_number + (1 << (k - 1))] < (k)) {}
+            g_lock.lock();
+            cout << "k=" << k << ", Before Merge N=" << thead_number;
+            printVector(A);
+            g_lock.unlock();
             mergeVector(A, number_threads, thead_number, length, remainder, k);
             g_lock.lock();
-            cout << "N=" << thead_number << endl;
+            cout << "k=" << k << ", After Merge N=" << thead_number;
             printVector(A);
             g_lock.unlock();
             flags[thead_number] = k;
@@ -117,30 +128,12 @@ bool check(const vector<int>& A)
 // Последовательный алгоритм пузырьковой сортировки
 void mergeVector(vector<int>& A, int number_threads, int thead_number, int length, int remainder, int k)
 {
-    //int i = 0;
-    //int next = A.size() / number_threads - 1;
-    ////cout << next << endl << endl;
-    //while(i < (A.size() - 2))
-    //{
-    //    for (int j = ((i + 1) > next) ? (i+1) : next; j < A.size(); j++)
-    //    {
-    //        if (A[i] > A[j]) {
-    //            cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
-    //            std::swap(A[i], A[j]);
-    //            if (j != (A.size() - 1)) {
-    //                //cout << "i = 0" << endl;
-    //                i = 0;
-    //            }
-    //            break;
-    //        }
-    //    }
-    //    i++;
-    //}
-    const int start1 = thead_number * length;
-    const int start2 = (thead_number + 1) * length;
-    const int end = start2 + length + remainder - 1;
+    const int length1 = length * (1<<(k-1));
+    const int start1 = thead_number * length1;
+    const int start2 = (thead_number + 1) * length1;
+    const int end = start2 + length1 + remainder - 1;
     g_lock.lock();
-    cout << start1 << start2 << end << endl;
+    cout << start1 << start2 << end << ": " << length  << "-" << length1  <<  endl;
     g_lock.unlock();
     int i = start1;
     int j = start2;
@@ -150,24 +143,15 @@ void mergeVector(vector<int>& A, int number_threads, int thead_number, int lengt
             j++;
             continue;
         }
+        g_lock.lock();
+        cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
+        g_lock.unlock();
         if (A[i] > A[j]) {
-            //cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
+            g_lock.lock();
+            cout << "swap" << endl;
+            g_lock.unlock();
             std::swap(A[i], A[j]);
         }
         i++;
-    }
-}
-
-void sortsort(vector<int>& A, int number_threads)
-{
-    for (int i = 0; i < (A.size() - 1); i++)
-    {
-        for (int j = (i + 1); j < (A.size() - 1); j++)
-        {
-            if (A[i] > A[j]) {
-                cout << "A[" << i << "] = " << A[i] << " > " << "A[" << j << "] = " << A[j] << endl;
-                std::swap(A[i], A[j]);
-            }
-        }
     }
 }
